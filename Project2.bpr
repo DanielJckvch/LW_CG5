@@ -4,7 +4,7 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="Project2.exe"/>
-    <OBJFILES value="Project2.obj Unit1.obj Unit2.obj"/>
+    <OBJFILES value="Project2.obj Unit1.obj Unit2.obj Unit3.obj"/>
     <RESFILES value="Project2.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -58,6 +58,7 @@
       <FILE FILENAME="Project2.cpp" FORMNAME="" UNITNAME="Project2" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Unit1.cpp" FORMNAME="Form1" UNITNAME="Unit1" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Unit2.cpp" FORMNAME="" UNITNAME="Unit2" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Unit3.cpp" FORMNAME="" UNITNAME="Unit3" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

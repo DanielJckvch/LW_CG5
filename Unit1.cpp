@@ -5,7 +5,9 @@
 
 #include "Unit1.h"
 #include "Unit2.h"
+#include "Unit3.h"
 #include <math.h>
+//#include <Graphics.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -16,6 +18,7 @@ void rotandscale(MyPoint* o, bool sw, bool sign);
 void prisminit(MyPoint* o);
 
 MyPoint* prism=new MyPoint[6];
+faceCont samePrism;
 
 double h=50.0;
 int d=200;
@@ -47,6 +50,7 @@ prisminit(prism);
 print(prism, Image1);
 Edit1->Text="X";
 Edit2->Text="Isometric";
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::Button1Click(TObject *Sender)
@@ -276,7 +280,12 @@ proj[2][0]=0;proj[2][1]=-sin(b);proj[2][2]=cos(b);proj[2][3]=-z_plane;
 proj[3][0]=0;proj[3][1]=0;proj[3][2]=0;proj[3][3]=1;
  break;
 }
-double sp[6][4];
+double** sp=new double*[6];
+for(int i=0; i<6;i++)
+{
+ sp[i]=new double[4];
+}
+
 for(k=0;k<6;k++)
 {
 int i, j;
@@ -334,8 +343,12 @@ hexagon[1].set_y();
 out_f=true;
 break;
  }    */
-
+samePrism.init(sp);
+samePrism.countCoeff();
+samePrism.isPrint(0.0,0.0,z,1.0);
+samePrism.print(Image1, prism, d);
 //Отрисовка контура
+/*
 int off_x, off_y;
 for(k=0; k<6;k++)
 {
@@ -356,7 +369,10 @@ Image1->Canvas->MoveTo(sp[k][0]+d,sp[k][1]+d);
 Image1->Canvas->LineTo(sp[k+3][0]+d,sp[k+3][1]+d);
 
 }
-
+//TColor* line;
+//Graphics::TBitmap *p = Image1->Picture->Bitmap;
+//samePrism.print(Image1);
+//line=(TColor*)p->ScanLine[0];
 /*for(++k; k<6; k++)
 {
 Image1->Canvas->MoveTo(sp[k][0]+200,sp[k][1]+200);
