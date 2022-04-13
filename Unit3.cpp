@@ -10,6 +10,11 @@ double getDet(double** m)
 return (m[0][0]*m[1][1]*m[2][2]+m[0][1]*m[1][2]*m[2][0]+m[0][2]*m[1][0]*m[2][1])-(m[0][2]*m[1][1]*m[2][0]+m[0][0]*m[1][2]*m[2][1]+m[2][2]*m[1][0]*m[0][1]);
 }
 
+double douModul(double par)
+{
+return par*((par>=0)?1:-1);
+}
+
 faceCont::faceCont(void)
 {
 ob=new face[5];
@@ -19,6 +24,7 @@ for(int i=0;i<5;i++)
  {ob[i].f[j]=0;} */
  ob[i].A=ob[i].B=ob[i].C=ob[i].D=0.0;
  ob[i].toPrint=false;
+ ob[i].trian=false;
 }
 }
 
@@ -28,32 +34,38 @@ for(int k=0;k<2;k++)
 {
 for(int i=0;i<3;i++)
 {
-for(int j=0;j<3;j++)
+for(int j=0;j<4;j++)
 {
   ob[k].f[i][j]=pr[i+k*3][j];
 }
 }
+int a=94;
 }
 
 for(int k=2;k<5;k++)
 {
- for(int j=0;j<4;j++)
- {ob[k].f[0][j]=pr[k-2][j];}
- for(int i=1;i<3;i++)
+ for(int i=0;i<4;i++)
  {
  for(int j=0;j<4;j++)
- {if(k==4&&i==2)
-  {ob[k].f[i][j]=pr[3][j];}
+ {if(k==4)
+  {int skip=(i==3||i==0)*((i==0)?-1:1);
+  ob[k].f[i][j]=pr[k-3+i+skip][j];}
  else
- {ob[k].f[i][j]=pr[k+i][j];}
+ {bool skip=(i>=2)?1:0;
+ ob[k].f[i][j]=pr[k-2+i+skip][j];}
  }
  }
+ ob[k].trian=true;
  }
 }
 
 void faceCont::countCoeff(void)
 {
 double mDet;
+double Det2;
+double Det3;
+double Det4;
+double eps=0.00001;
 double** matr1=new double*[3];
 double** matr2=new double*[3];
 double** matr3=new double*[3];
@@ -83,29 +95,32 @@ for(int i=0;i<3;i++)
  matr3[i][1]=-1;
  matr4[i][2]=-1;
 }
-if((mDet=getDet(matr1))==0)
+mDet=getDet(matr1);
+if(mDet==0||(mDet>-eps&&mDet<0))
 { continue;}
-ob[k].A=getDet(matr2)/mDet;
-ob[k].B=getDet(matr3)/mDet;
-ob[k].C=getDet(matr4)/mDet;
+if(douModul(Det2=getDet(matr2))<eps)
+{Det2=0.0;}
+if(douModul(Det3=getDet(matr3))<eps)
+{Det3=0.0;}
+if(douModul(Det4=getDet(matr4))<eps)
+{Det4=0.0;}
+ob[k].A=Det2/mDet;
+ob[k].B=Det3/mDet;
+ob[k].C=Det4/mDet;
 ob[k].D=1;
-
 }
+
 }
 
 void faceCont::isPrint(double x, double y, double z, double d)
 {
 for(int i=0;i<5;i++)
 {
-if(ob[i].A*x+ob[i].B*y+ob[i].C*z+ob[i].D*d>=0)
-{
-ob[i].toPrint=false;
-}
+double a=ob[i].A*x+ob[i].B*y+ob[i].C*z+ob[i].D*d;
+if(a<-0)
+{ob[i].toPrint=true;}
 else
-{
-ob[i].toPrint=true;
-}
-//int r=0;
+{ob[i].toPrint=false;}
 }
 }
 
@@ -116,13 +131,27 @@ void faceCont::print(TImage* Image1, MyPoint* pList, int d)
  {
  if(ob[i].toPrint)
  {
- oi=search(pList,ob[i], d);
- Image1->Canvas->MoveTo(ob[i].f[1][0]+d,ob[i].f[1][1]+d);
- Image1->Canvas->LineTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
- Image1->Canvas->MoveTo(ob[i].f[1][0]+d,ob[i].f[1][1]+d);
+
+ if(ob[i].trian)
+ {
+ Image1->Canvas->MoveTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[1][0]+d,ob[i].f[1][1]+d);
+ Image1->Canvas->MoveTo(ob[i].f[2][0]+d,ob[i].f[2][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[3][0]+d,ob[i].f[3][1]+d);
+ Image1->Canvas->MoveTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
  Image1->Canvas->LineTo(ob[i].f[2][0]+d,ob[i].f[2][1]+d);
- if(oi!=-1)
- {Image1->Canvas->LineTo(pList[oi].get_x()+d,pList[oi].get_y()+d);}
+ Image1->Canvas->MoveTo(ob[i].f[1][0]+d,ob[i].f[1][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[3][0]+d,ob[i].f[3][1]+d);
+
+ }
+ else
+ {
+ Image1->Canvas->MoveTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[1][0]+d,ob[i].f[1][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[2][0]+d,ob[i].f[2][1]+d);
+ Image1->Canvas->LineTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
+ }
+ ob[i].trian=false;
  //«¿ –¿— ¿
  }
  }
@@ -157,7 +186,7 @@ int faceCont::search(MyPoint* o, face& flat, int d)
   for(int i=0;i<6;i++)
   {
   double a=o[i].get_x()*flat.A+o[i].get_y()*flat.B+o[i].get_z()*flat.C+flat.D;
-  if((a<0.1&&a>-0.1)&&(o[i].get_x()!=)
+  if((a<0.1&&a>-0.1))
   {return i;}
   }
   return -1;

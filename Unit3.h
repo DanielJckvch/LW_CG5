@@ -6,12 +6,13 @@
 #include "Unit1.h"
 struct face
 {
-  double f[3][4];
+  double f[4][4];
   double A;
   double B;
   double C;
   double D;
   bool toPrint;
+  bool trian;
 };
 
 class faceCont
