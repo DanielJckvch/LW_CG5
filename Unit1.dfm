@@ -1,5 +1,5 @@
 object Form1: TForm1
-  Left = 195
+  Left = 185
   Top = 196
   Width = 1135
   Height = 584
@@ -15,10 +15,10 @@ object Form1: TForm1
   PixelsPerInch = 96
   TextHeight = 13
   object Image1: TImage
-    Left = 24
+    Left = 0
     Top = -8
-    Width = 561
-    Height = 513
+    Width = 585
+    Height = 553
   end
   object Button1: TButton
     Left = 600

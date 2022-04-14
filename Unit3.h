@@ -20,10 +20,11 @@ class faceCont
  private:
  face* ob;
  int search(MyPoint* o, face& f, int d);
+
  public:
  faceCont(void);
  void init(double** pr);
- void countCoeff(void);
+ void countCoeff(double** p);
  void isPrint(double x, double y, double z, double d);
  void print(TImage* Image1, MyPoint* ob, int d);
 

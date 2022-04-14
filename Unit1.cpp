@@ -23,7 +23,7 @@ faceCont samePrism;
 double h=50.0;
 int d=200;
 double z_plane=100.0;
-double z=200.0;
+double z=500.0;
 
 double a_step=10;
 int sc_step=2;
@@ -348,8 +348,8 @@ out_f=true;
 break;
  }    */
 samePrism.init(sp);
-samePrism.countCoeff();
-samePrism.isPrint(d,d,z,1.0);
+samePrism.countCoeff(sp);
+samePrism.isPrint(1000,1000,1000,1.0);
 samePrism.print(Image1, prism, d);
 //Отрисовка контура
 /*

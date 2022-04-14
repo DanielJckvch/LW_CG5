@@ -4,6 +4,7 @@
 #pragma hdrstop
 
 #include "Unit3.h"
+#include <math.h>
 
 double getDet(double** m)
 {
@@ -59,19 +60,51 @@ for(int k=2;k<5;k++)
  }
 }
 
-void faceCont::countCoeff(void)
+void faceCont::countCoeff(double** p)
 {
 double mDet;
 double Det2;
 double Det3;
 double Det4;
+
+long int v1[3];
+long int v2[3];
+long int mid_geom[3];
+mid_geom[0]=0;
+mid_geom[1]=0;
+mid_geom[2]=0;
+ for(int j=0;j<6;j++)
+ {
+ mid_geom[0]=mid_geom[0]+p[j][0];
+ }
+ mid_geom[0]=mid_geom[0]/6;
+ for(int j=0;j<6;j++)
+ {
+ mid_geom[1]=mid_geom[1]+p[j][1];
+ }
+ mid_geom[1]=mid_geom[1]/6;
+ for(int j=0;j<6;j++)
+ {
+ mid_geom[2]=mid_geom[2]+p[j][2];
+ }
+ mid_geom[2]=mid_geom[2]/6;
+ /*
 double eps=0.00001;
 double** matr1=new double*[3];
 double** matr2=new double*[3];
 double** matr3=new double*[3];
 double** matr4=new double*[3];
-for(int i=0;i<3;i++)
+*/
+for(int i=0;i<5;i++)
 {
+
+for(int j=0;j<3;j++)
+{
+v1[j]=ob[i].f[1][j]-ob[i].f[0][j];
+v2[j]=ob[i].f[2][j]-ob[i].f[0][j];
+ }
+ /*
+
  matr1[i]=new double[3];
  matr2[i]=new double[3];
  matr3[i]=new double[3];
@@ -96,19 +129,57 @@ for(int i=0;i<3;i++)
  matr4[i][2]=-1;
 }
 mDet=getDet(matr1);
+
 if(mDet==0||(mDet>-eps&&mDet<0))
 { continue;}
-if(douModul(Det2=getDet(matr2))<eps)
+
+if(douModul(Det2=getDet(matr2))==0)
 {Det2=0.0;}
-if(douModul(Det3=getDet(matr3))<eps)
+if(douModul(Det3=getDet(matr3))==0)
 {Det3=0.0;}
-if(douModul(Det4=getDet(matr4))<eps)
+if(douModul(Det4=getDet(matr4))==0)
 {Det4=0.0;}
+
 ob[k].A=Det2/mDet;
 ob[k].B=Det3/mDet;
 ob[k].C=Det4/mDet;
 ob[k].D=1;
+if(ob[k].A*mid_geom[0]+ob[k].B*mid_geom[1]+ob[k].C*mid_geom[2]>0)
+{
+ob[k].A*=-1;
+ob[k].B*=-1;
+ob[k].C*=-1;
+ob[k].D*=-1;
 }
+/*
+if(ob[k].A*mid_geom[0]+ob[k].B*mid_geom[1]+ob[k].C*mid_geom[2])
+{
+ob[k].A*=-1;
+ob[k].B*=-1;
+ob[k].C*=-1;
+ob[k].D*=-1;
+}
+*/
+
+ob[i].A=v1[1]*v2[2]-v1[2]*v2[1];
+ob[i].B=v2[0]*v1[2]-v1[0]*v2[2];
+ob[i].C=v1[0]*v2[1]-v1[1]*v2[0];
+ob[i].D=(-1*ob[i].A*ob[i].f[0][0]-ob[i].B*ob[i].f[0][1]-ob[i].C*ob[i].f[0][2]);
+if(ob[i].A*mid_geom[0]+ob[i].B*mid_geom[1]+ob[i].C*mid_geom[2]+ob[i].D>0)
+{
+ob[i].A*=-1;
+ob[i].B*=-1;
+ob[i].C*=-1;
+ob[i].D*=-1;
+}
+/*
+ob[i].A=ob[i].A/ob[i].D;
+ob[i].B=ob[i].B/ob[i].D;
+ob[i].C=ob[i].C/ob[i].D;
+ob[i].D=ob[i].D/ob[i].D;
+ */
+}
+
 
 }
 
@@ -116,8 +187,8 @@ void faceCont::isPrint(double x, double y, double z, double d)
 {
 for(int i=0;i<5;i++)
 {
-double a=ob[i].A*x+ob[i].B*y+ob[i].C*z+ob[i].D*d;
-if(a<-0)
+double a=ob[i].C;
+if(a>0)
 {ob[i].toPrint=true;}
 else
 {ob[i].toPrint=false;}
@@ -152,6 +223,11 @@ void faceCont::print(TImage* Image1, MyPoint* pList, int d)
  Image1->Canvas->LineTo(ob[i].f[0][0]+d,ob[i].f[0][1]+d);
  }
  ob[i].trian=false;
+ ob[i].toPrint=false;
+ ob[i].A=0.0;
+ ob[i].B=0.0;
+ ob[i].C=0.0;
+ ob[i].D=0.0;
  //«¿ –¿— ¿
  }
  }
