@@ -5,20 +5,37 @@
 
 #include "Unit1.h"
 #include "Unit2.h"
-#include "Unit3.h"
+//#include "Unit3.h"
 #include <math.h>
 //#include <Graphics.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 TForm1 *Form1;
-//Призма. Поворот и перенос вокруг всех осей, масштабирование.
+//Призма. Поворот и перенос вокруг всех осей, масштабирование, закраска и удаление невидимых поверхностей
+struct face
+{
+  double* f[4];
+  double A;
+  double B;
+  double C;
+  double D;
+  bool toPrint;
+  bool trian;
+};
 void print(MyPoint* o, TImage* Image1);
 void rotandscale(MyPoint* o, bool sw, bool sign);
 void prisminit(MyPoint* o);
+void bresline(TColor*, int, int, int, int, int);
+void fillFaceList(void);
+void countCoeffs(void);
 
 MyPoint* prism=new MyPoint[6];
-faceCont samePrism;
+face* samePrism=new face[6];
+double prismProj[6][4];
+
+TColor* buff;
+BITMAPINFO info;
 
 double h=50.0;
 int d=200;
@@ -47,7 +64,66 @@ void __fastcall TForm1::Form1Create(TObject *Sender)
 {
 //Инициализация и вывод шестиугольнка
 prisminit(prism);
+
+TRect rct;
+rct = Rect(0,0,Image1->Width,Image1->Height);
+Image1->Canvas->Brush->Style=bsSolid;
+Image1->Canvas->FillRect(rct);
+
+//BITMAPINFOHEADER info;
+
+//setmem(&info,sizeof(info),0);
+info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER );
+info.bmiHeader.biBitCount=0;
+info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+/*
+info.bmiHeader.biHeight=Image1->Height;
+info.bmiHeader.biWidth=Image1->Width;
+info.bmiHeader.biPlanes = 1;
+info.bmiHeader.biBitCount = 32;
+info.bmiHeader.biCompression = BI_RGB;
+info.bmiHeader.biSizeImage = 0;
+info.bmiHeader.biXPelsPerMeter = 0;
+info.bmiHeader.biYPelsPerMeter = 0;
+ info.bmiHeader.biClrUsed = 3;
+info.bmiHeader.biClrImportant = 0;
+info.bmiColors[0].rgbRed=(BYTE)clRed;
+info.bmiColors[0].rgbGreen=(BYTE)(clGreen>>8);
+info.bmiColors[0].rgbBlue=(BYTE)(clBlue>>16);
+*/
+//GetObject(Image1->Picture->Bitmap, sizeof(info), &info);
+//info.bmiHeader.biHeight=-Image1->Picture->Bitmap->Height;
+int ret=GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,NULL,(BITMAPINFO*)&info,DIB_RGB_COLORS);
+buff=new TColor[info.bmiHeader.biHeight*info.bmiHeader.biWidth];
+info.bmiHeader.biCompression=BI_RGB;
+info.bmiHeader.biHeight*=-1;
+int ret1=GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,buff,(BITMAPINFO*)&info,DIB_RGB_COLORS);
+//info.bmiHeader.biCompression=BI_RGB;
+//info.bmiHeader.biHeight*=-1;
+//bresline(buff,Image1->Width,100,100,400,100);
 print(prism, Image1);
+ /*
+for(int i=0;i<Image1->Width;i++)
+{
+ bool f=false;
+ for(int j=0;j<Image1->Height;j++)
+ {
+   if(buff[j*Image1->Width+i]==clBlack)
+   {
+   f=true;
+   }
+   else if(f)
+   {
+   buff[j*Image1->Width+i]=0x00FFFF00;
+   }
+
+ }
+
+}
+*/
+
+
+
 Edit1->Text="X";
 Edit2->Text="Isometric";
 
@@ -280,6 +356,7 @@ proj[2][0]=0;proj[2][1]=-sin(b);proj[2][2]=cos(b);proj[2][3]=-z_plane;
 proj[3][0]=0;proj[3][1]=0;proj[3][2]=0;proj[3][3]=1;
  break;
 }
+/*
 double** sp=new double*[6];
 for(int i=0; i<6;i++)
 {
@@ -287,9 +364,10 @@ for(int i=0; i<6;i++)
  /*sp[i][0]= o[i].get_x();
 sp[i][1]= o[i].get_y();
 sp[i][2]= o[i].get_z();
-sp[i][3]= 1; */
-}
+sp[i][3]= 1; 
+}*/
 //samePrism.init(sp);
+
 for(k=0;k<6;k++)
 {
 int i, j;
@@ -328,10 +406,14 @@ for (i = 0;i < 4;i++)
         v2[i] = sum;
 }
 }
-sp[k][0]= v2[0];
-sp[k][1]= v2[1];
-sp[k][2]= v2[2];
-sp[k][3]= v2[3];
+ int a=v2[1];
+
+prismProj[k][0]= v2[0];
+prismProj[k][1]= v2[1];
+prismProj[k][2]= v2[2];
+prismProj[k][3]= v2[3];
+
+
 }
 
 /*
@@ -347,8 +429,43 @@ hexagon[1].set_y();
 out_f=true;
 break;
  }    */
-samePrism.init(sp);
-samePrism.countCoeff(sp);
+
+ fillFaceList();
+ countCoeffs();
+ for(int i=0;i<5;i++)
+ {
+ if(samePrism[i].toPrint)
+ {
+
+ if(samePrism[i].trian)
+ {
+ bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d);
+ bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
+ bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d);
+ bresline(buff,Image1->Width,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
+
+ }
+ else
+ {
+
+ bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d);
+ bresline(buff,Image1->Width,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d);
+ bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d);
+
+ }
+ samePrism[i].trian=false;
+ samePrism[i].toPrint=false;
+ samePrism[i].A=0.0;
+ samePrism[i].B=0.0;
+ samePrism[i].C=0.0;
+ samePrism[i].D=0.0;
+ //ЗАКРАСКА
+ }
+ }
+ SetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Height,buff,&info,DIB_RGB_COLORS);
+ /*
+samePrism.init(prismProj);
+samePrism.countCoeff(prismProj);
 samePrism.isPrint(1000,1000,1000,1.0);
 samePrism.print(Image1, prism, d);
 //Отрисовка контура
@@ -373,10 +490,6 @@ Image1->Canvas->MoveTo(sp[k][0]+d,sp[k][1]+d);
 Image1->Canvas->LineTo(sp[k+3][0]+d,sp[k+3][1]+d);
 
 }
-//TColor* line;
-//Graphics::TBitmap *p = Image1->Picture->Bitmap;
-//samePrism.print(Image1);
-//line=(TColor*)p->ScanLine[0];
 /*for(++k; k<6; k++)
 {
 Image1->Canvas->MoveTo(sp[k][0]+200,sp[k][1]+200);
@@ -464,12 +577,125 @@ o[k].set_z(v2[2]);
 }
 }
 void prisminit(MyPoint* o)
-{ int i=0;
+{
   o[0]=MyPoint('A',0.0,200.0,-h/2);
   o[1]=MyPoint(char('A'+1),0.0,0.0,-h/2);
   o[2]=MyPoint(char('A'+2),200.0,0.0,-h/2);
- for(i=3; i<6; i++)
+ for(int i=3; i<6; i++)
  {
  o[i]=MyPoint(char('A'+i),o[i-3].get_x(),o[i-3].get_y(),o[i-3].get_z()+h);
  }
+ /*
+ prismProj=new double*[6];
+ for(int i=0;i<6;i++)
+ {
+    prismProj[i]=new double[3];
+ }*/
+}
+
+ void bresline(TColor* Image, int w, int x0, int y0, int x1, int y1)
+{
+// ????????? ????? ?????????? ??????????
+  int sx=x0<x1?1:-1;
+  int dx=(x1-x0)*sx;
+  int sy=y0<y1?1:-1;
+  int dy=(y1-y0)*sy;
+  int err1=(dx>dy?dx:-dy)/2;
+  int err2=err1;
+  for(;;)
+  {
+  Image[x0+y0*w]=clBlack;
+  if(x0==x1&&y0==y1)
+  {
+  break;
+  }
+  err2=err1;
+  if(err2>-dx)
+  {
+  err1-=dy;
+  x0+=sx;
+  }
+  if(err2<dy)
+  {
+  err1+=dx;
+  y0+=sy;
+  }
+  }
+}
+void fillFaceList(void)
+{  //МАССИВ ПРОЕКЦИИ
+for(int k=0;k<2;k++)
+{
+for(int i=0;i<3;i++)
+{
+
+  samePrism[k].f[i]=prismProj[i+k*3];
+  double t=samePrism[k].f[i][0];
+  int a=3;
+}
+}
+
+for(int k=2;k<5;k++)
+{
+ for(int i=0;i<4;i++)
+ {
+  if(k==4)
+  {int skip=(i==3||i==0)*((i==0)?-1:1);
+  samePrism[k].f[i]=prismProj[k-3+i+skip];}
+ else
+ {bool skip=(i>=2)?1:0;
+ samePrism[k].f[i]=prismProj[k-2+i+skip];}
  }
+ samePrism[k].trian=true;
+ }
+}
+
+void countCoeffs(void)
+{
+long int v1[3];
+long int v2[3];
+long int bariocenter[3];
+bariocenter[0]=0;
+bariocenter[1]=0;
+bariocenter[2]=0;
+ for(int j=0;j<6;j++)
+ {
+ bariocenter[0]=bariocenter[0]+prismProj[j][0];
+ }
+ bariocenter[0]=bariocenter[0]/6;
+ for(int j=0;j<6;j++)
+ {
+ bariocenter[1]=bariocenter[1]+prismProj[j][1];
+ }
+ bariocenter[1]=bariocenter[1]/6;
+ for(int j=0;j<6;j++)
+ {
+ bariocenter[2]=bariocenter[2]+prismProj[j][2];
+ }
+ bariocenter[2]=bariocenter[2]/6;
+for(int i=0;i<5;i++)
+{
+
+for(int j=0;j<3;j++)
+{
+v1[j]=samePrism[i].f[1][j]-samePrism[i].f[0][j];
+v2[j]=samePrism[i].f[2][j]-samePrism[i].f[0][j];
+}
+samePrism[i].A=v1[1]*v2[2]-v1[2]*v2[1];
+samePrism[i].B=v2[0]*v1[2]-v1[0]*v2[2];
+samePrism[i].C=v1[0]*v2[1]-v1[1]*v2[0];
+samePrism[i].D=(-1*samePrism[i].A*samePrism[i].f[0][0]-samePrism[i].B*samePrism[i].f[0][1]-samePrism[i].C*samePrism[i].f[0][2]);
+if(samePrism[i].A*bariocenter[0]+samePrism[i].B*bariocenter[1]+samePrism[i].C*bariocenter[2]+samePrism[i].D>0)
+{
+samePrism[i].A*=-1;
+samePrism[i].B*=-1;
+samePrism[i].C*=-1;
+samePrism[i].D*=-1;
+}
+if(samePrism[i].C>0)
+{samePrism[i].toPrint=true;}
+
+}
+ int r=3;
+}
+

@@ -1,6 +1,6 @@
 object Form1: TForm1
   Left = 185
-  Top = 196
+  Top = 151
   Width = 1135
   Height = 584
   Caption = 'Form1'
@@ -17,7 +17,7 @@ object Form1: TForm1
   object Image1: TImage
     Left = 0
     Top = -8
-    Width = 585
+    Width = 569
     Height = 553
   end
   object Button1: TButton
