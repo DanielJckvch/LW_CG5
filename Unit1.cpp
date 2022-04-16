@@ -20,6 +20,7 @@ struct face
   double B;
   double C;
   double D;
+  int index[4];
   bool toPrint;
   bool trian;
 };
@@ -29,10 +30,13 @@ void prisminit(MyPoint* o);
 void bresline(TColor*, int, int, int, int, int);
 void fillFaceList(void);
 void countCoeffs(void);
+void openBuffer(TImage* Image1);
+void closeBuffer(void);
 
 MyPoint* prism=new MyPoint[6];
 face* samePrism=new face[6];
 double prismProj[6][4];
+long int bariocenter[3];
 
 TColor* buff;
 BITMAPINFO info;
@@ -64,68 +68,15 @@ void __fastcall TForm1::Form1Create(TObject *Sender)
 {
 //Инициализация и вывод шестиугольнка
 prisminit(prism);
-
 TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-
-//BITMAPINFOHEADER info;
-
-//setmem(&info,sizeof(info),0);
-info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER );
-info.bmiHeader.biBitCount=0;
-info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-/*
-info.bmiHeader.biHeight=Image1->Height;
-info.bmiHeader.biWidth=Image1->Width;
-info.bmiHeader.biPlanes = 1;
-info.bmiHeader.biBitCount = 32;
-info.bmiHeader.biCompression = BI_RGB;
-info.bmiHeader.biSizeImage = 0;
-info.bmiHeader.biXPelsPerMeter = 0;
-info.bmiHeader.biYPelsPerMeter = 0;
- info.bmiHeader.biClrUsed = 3;
-info.bmiHeader.biClrImportant = 0;
-info.bmiColors[0].rgbRed=(BYTE)clRed;
-info.bmiColors[0].rgbGreen=(BYTE)(clGreen>>8);
-info.bmiColors[0].rgbBlue=(BYTE)(clBlue>>16);
-*/
-//GetObject(Image1->Picture->Bitmap, sizeof(info), &info);
-//info.bmiHeader.biHeight=-Image1->Picture->Bitmap->Height;
-int ret=GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,NULL,(BITMAPINFO*)&info,DIB_RGB_COLORS);
-buff=new TColor[info.bmiHeader.biHeight*info.bmiHeader.biWidth];
-info.bmiHeader.biCompression=BI_RGB;
-info.bmiHeader.biHeight*=-1;
-int ret1=GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,buff,(BITMAPINFO*)&info,DIB_RGB_COLORS);
-//info.bmiHeader.biCompression=BI_RGB;
-//info.bmiHeader.biHeight*=-1;
-//bresline(buff,Image1->Width,100,100,400,100);
+openBuffer(Image1);
 print(prism, Image1);
- /*
-for(int i=0;i<Image1->Width;i++)
-{
- bool f=false;
- for(int j=0;j<Image1->Height;j++)
- {
-   if(buff[j*Image1->Width+i]==clBlack)
-   {
-   f=true;
-   }
-   else if(f)
-   {
-   buff[j*Image1->Width+i]=0x00FFFF00;
-   }
-
- }
-
-}
-*/
-
-
-
 Edit1->Text="X";
 Edit2->Text="Isometric";
+closeBuffer();
 
 }
 //---------------------------------------------------------------------------
@@ -138,8 +89,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
  //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -152,8 +105,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
  //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -166,8 +121,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
  //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -180,8 +137,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
  //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -215,8 +174,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
 //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -249,8 +210,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
 //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -312,8 +275,10 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+openBuffer(Image1);
 //Отрисовка
 print(prism, Image1);
+closeBuffer();
 }
 //---------------------------------------------------------------------------
 
@@ -356,17 +321,6 @@ proj[2][0]=0;proj[2][1]=-sin(b);proj[2][2]=cos(b);proj[2][3]=-z_plane;
 proj[3][0]=0;proj[3][1]=0;proj[3][2]=0;proj[3][3]=1;
  break;
 }
-/*
-double** sp=new double*[6];
-for(int i=0; i<6;i++)
-{
- sp[i]=new double[4];
- /*sp[i][0]= o[i].get_x();
-sp[i][1]= o[i].get_y();
-sp[i][2]= o[i].get_z();
-sp[i][3]= 1; 
-}*/
-//samePrism.init(sp);
 
 for(k=0;k<6;k++)
 {
@@ -389,8 +343,6 @@ if(proj_mode==2)
 {
 int i, j;
 
-//double v[4]={v2[0],v2[1],v2[2],1};
-//double v1[4]={0, 0, 0, 1};
 for(i=0;i<2;i++)
 {
 per[i][i]=(z-z_plane)/(z-o[k].get_z());
@@ -406,8 +358,16 @@ for (i = 0;i < 4;i++)
         v2[i] = sum;
 }
 }
- int a=v2[1];
-
+//Проверка на выход точки за холст
+if(v2[0]+d<0||v2[0]+d>Image1->Width||v2[1]+d<0||v2[1]+d>Image1->Height)
+{
+for(int i=0;i<6;i++)
+{o[i].set_x();
+o[i].set_y();
+o[i].set_z();
+k=-1;}
+continue;
+}
 prismProj[k][0]= v2[0];
 prismProj[k][1]= v2[1];
 prismProj[k][2]= v2[2];
@@ -416,33 +376,21 @@ prismProj[k][3]= v2[3];
 
 }
 
-/*
- //Проверка на выход точки за холст
-v1[0]=v2[0];
-v1[1]=v2[1];
-if(v2[0]+hexagon[0].get_x()<=0||v2[1]+hexagon[0].get_y()<=0)
-{
-hexagon[0].set_x();
-hexagon[0].set_y();
-hexagon[1].set_x();
-hexagon[1].set_y();
-out_f=true;
-break;
- }    */
-
  fillFaceList();
  countCoeffs();
+ //Отрисовка контура
  for(int i=0;i<5;i++)
  {
  if(samePrism[i].toPrint)
  {
 
- if(samePrism[i].trian)
+ if(!samePrism[i].trian)
  {
  bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
+ Image1->Canvas->TextOutA(samePrism[0].f[0][0]+d,samePrism[0].f[0][1]+d,o[samePrism[0].index[0]].get_let());
 
  }
  else
@@ -453,8 +401,7 @@ break;
  bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d);
 
  }
- samePrism[i].trian=false;
- samePrism[i].toPrint=false;
+
  samePrism[i].A=0.0;
  samePrism[i].B=0.0;
  samePrism[i].C=0.0;
@@ -463,53 +410,23 @@ break;
  }
  }
  SetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Height,buff,&info,DIB_RGB_COLORS);
- /*
-samePrism.init(prismProj);
-samePrism.countCoeff(prismProj);
-samePrism.isPrint(1000,1000,1000,1.0);
-samePrism.print(Image1, prism, d);
-//Отрисовка контура
-/*
-int off_x, off_y;
-for(k=0; k<6;k++)
-{
-Image1->Canvas->MoveTo(sp[k][0]+d,sp[k][1]+d);
-if(k%3!=2)
-{
-Image1->Canvas->LineTo(sp[k+1][0]+d,sp[k+1][1]+d);
-}
-else
-{
- Image1->Canvas->LineTo(sp[k-2][0]+d,sp[k-2][1]+d);
-}
-Image1->Canvas->TextOutA(sp[k][0]+d+1,sp[k][1]+d+3,o[k].get_let());
-}
-for(k=0; k<3;k++)
-{
-Image1->Canvas->MoveTo(sp[k][0]+d,sp[k][1]+d);
-Image1->Canvas->LineTo(sp[k+3][0]+d,sp[k+3][1]+d);
+ for(int i=0;i<5;i++)
+ {
+ if(samePrism[i].toPrint)
+ {
+ int off_x;
+ int off_y;
+ for(int j=0;j<3+!samePrism[i].trian;j++)
+ {
+ off_x=(o[samePrism[i].index[j]].get_x()<=bariocenter[0])?-10:8;
+ off_y=(o[samePrism[i].index[j]].get_y()<=bariocenter[1])?-12:2;
+ Image1->Canvas->TextOutA(samePrism[i].f[j][0]+d+off_x,samePrism[i].f[j][1]+d+off_y,o[samePrism[i].index[j]].get_let());
+ }
+ samePrism[i].trian=false;
+ samePrism[i].toPrint=false;
+ }
+ }
 
-}
-/*for(++k; k<6; k++)
-{
-Image1->Canvas->MoveTo(sp[k][0]+200,sp[k][1]+200);
-Image1->Canvas->LineTo(sp[k+1][0]+200,sp[k+1][1]+200);
-}
-Image1->Canvas->MoveTo(sp[k-1][0]+200,sp[k][k-1]+200);
-Image1->Canvas->LineTo(sp[k-3][0]+200,sp[k-3][1]+200);
-*/
-/*
-//Расставление букв точек
-for(k=0; k<3; k++)
-{
-//Определение значения отступа для буквы
-off_x=(o[k].get_x()<0)?-6:4;
-off_y=(o[k].get_y()<0)?-12:2;
-
-Image1->Canvas->MoveTo(o[k].get_x(),o[k].get_y());
-Image1->Canvas->TextOutA(o[k].get_x()+off_x,o[k].get_y()+off_y,o[k].get_let());
-}
- */
 }
 
 void rotandscale(MyPoint* o, bool sw, bool sign)
@@ -630,8 +547,8 @@ for(int i=0;i<3;i++)
 {
 
   samePrism[k].f[i]=prismProj[i+k*3];
-  double t=samePrism[k].f[i][0];
-  int a=3;
+  samePrism[k].index[i]=i+k*3;
+  samePrism[k].trian=true;
 }
 }
 
@@ -641,12 +558,13 @@ for(int k=2;k<5;k++)
  {
   if(k==4)
   {int skip=(i==3||i==0)*((i==0)?-1:1);
-  samePrism[k].f[i]=prismProj[k-3+i+skip];}
+  samePrism[k].f[i]=prismProj[k-3+i+skip];
+  samePrism[k].index[i]=k-3+i+skip;}
  else
  {bool skip=(i>=2)?1:0;
- samePrism[k].f[i]=prismProj[k-2+i+skip];}
+ samePrism[k].f[i]=prismProj[k-2+i+skip];
+ samePrism[k].index[i]=k-2+i+skip;}
  }
- samePrism[k].trian=true;
  }
 }
 
@@ -654,7 +572,7 @@ void countCoeffs(void)
 {
 long int v1[3];
 long int v2[3];
-long int bariocenter[3];
+
 bariocenter[0]=0;
 bariocenter[1]=0;
 bariocenter[2]=0;
@@ -696,6 +614,23 @@ if(samePrism[i].C>0)
 {samePrism[i].toPrint=true;}
 
 }
- int r=3;
+}
+
+void openBuffer(TImage* Image1)
+{
+ info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER );
+info.bmiHeader.biBitCount=0;
+info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,NULL,(BITMAPINFO*)&info,DIB_RGB_COLORS);
+buff=new TColor[info.bmiHeader.biHeight*info.bmiHeader.biWidth];
+info.bmiHeader.biCompression=BI_RGB;
+info.bmiHeader.biHeight*=-1;
+GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,buff,(BITMAPINFO*)&info,DIB_RGB_COLORS);
+ //info.bmiHeader.biHeight*=-1;
+//bresline(buff,Image1->Width,100,100,400,100);
+}
+void closeBuffer(void)
+{
+delete buff;
 }
 
