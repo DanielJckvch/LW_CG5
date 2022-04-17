@@ -21,17 +21,19 @@ struct face
   double C;
   double D;
   int index[4];
+  unsigned int color;
   bool toPrint;
   bool trian;
 };
-void print(MyPoint* o, TImage* Image1);
-void rotandscale(MyPoint* o, bool sw, bool sign);
-void prisminit(MyPoint* o);
-void bresline(TColor*, int, int, int, int, int);
-void fillFaceList(void);
-void countCoeffs(void);
-void openBuffer(TImage* Image1);
-void closeBuffer(void);
+void print(MyPoint* o, TImage* Image1);//Печатание призмы
+void rotandscale(MyPoint* o, bool sw, bool sign);//Поворот и масштабирование
+void prisminit(MyPoint* o);//Инициализация призмы
+void bresline(TColor*, int, int, int, int, int);//Прочерчивание линии алгоритмом Брезенхэиа
+void fillFaceList(void);//Инициализация списка граней
+void countCoeffs(void);//Расчёт уравнений нормали граней
+void openBuffer(TImage* Image1);//Открытие буфера для двойной буферизации
+void closeBuffer(void);//Закрытие буфера
+void surfaceFill(TColor* Image, unsigned int fillColor, unsigned int brColor, int w, int x, int y);//Заливка грани
 
 MyPoint* prism=new MyPoint[6];
 face* samePrism=new face[6];
@@ -53,11 +55,13 @@ int mov_step=10;
 int axis_mode=0;
 int proj_mode=0;
 
+
+/*
 bool f1=1;
 bool f2=1;
 bool f3=1;
 bool f4=1;
-
+ */
 //---------------------------------------------------------------------------
 __fastcall TForm1::TForm1(TComponent* Owner)
         : TForm(Owner)
@@ -67,11 +71,13 @@ __fastcall TForm1::TForm1(TComponent* Owner)
 void __fastcall TForm1::Form1Create(TObject *Sender)
 {
 //Инициализация и вывод шестиугольнка
+//Подготовка bitmap
 prisminit(prism);
 TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
+//Вывод призмы
 openBuffer(Image1);
 print(prism, Image1);
 Edit1->Text="X";
@@ -89,8 +95,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
  //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -105,8 +111,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
  //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -121,8 +127,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
  //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -137,8 +143,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
  //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -146,7 +152,7 @@ closeBuffer();
 
 void __fastcall TForm1::Button5Click(TObject *Sender)
 {
-//Сдвиг против оси
+//Сдвиг против направления оси
 switch(axis_mode)
 {
 case 0:
@@ -174,8 +180,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
 //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -183,7 +189,7 @@ closeBuffer();
 
 void __fastcall TForm1::Button6Click(TObject *Sender)
 {
-//Сдвиг по оси
+//Сдвиг по направлению оси
 switch(axis_mode)
 {
 case 0:
@@ -210,8 +216,8 @@ TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
 //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -220,63 +226,47 @@ closeBuffer();
 void __fastcall TForm1::Button7Click(TObject *Sender)
 {
 //Выбор оси
-if(f1)
+if(++axis_mode==3)
+{axis_mode=0;}
+switch(axis_mode)
 {
-        if(f2)
-        {
-        axis_mode=1;
-        f2=0;
-        Edit1->Text="Y";
-        }
-        else
-        {
-        axis_mode=2;
-        f1=0;
-        f2=1;
-        Edit1->Text="Z";
-        }
-}
-else
-{
-axis_mode=0;
-f1=1;
+case 0:
 Edit1->Text="X";
+break;
+case 1:
+Edit1->Text="Y";
+break;
+case 2:
+Edit1->Text="Z";
+break;
 }
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TForm1::Button8Click(TObject *Sender)
 {
-//Выбор проекции
-if(f3)
+//Переключение режима проекции
+if(++proj_mode==3)
+{proj_mode=0;}
+switch(proj_mode)
 {
-        if(f4)
-        {
-        proj_mode=1;
-        f4=0;
-        Edit2->Text="Cavalier";
-        }
-        else
-        {
-        proj_mode=2;
-        f3=0;
-        f4=1;
-        Edit2->Text="Perspective";
-        }
-}
-else
-{
-proj_mode=0;
-f3=1;
+case 0:
 Edit2->Text="Isometric";
+break;
+case 1:
+Edit2->Text="Cavalier";
+break;
+case 2:
+Edit2->Text="Perspective";
+break;
 }
 //Очистка холста
 TRect rct;
 rct = Rect(0,0,Image1->Width,Image1->Height);
 Image1->Canvas->Brush->Style=bsSolid;
 Image1->Canvas->FillRect(rct);
-openBuffer(Image1);
 //Отрисовка
+openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
 }
@@ -288,12 +278,13 @@ int k;
 double pi = 3.1415926;
 double a; //x
 double b; //y
-double proj[4][4];
-double per[4][4];
+double proj[4][4];//Матрица проекции
+double per[4][4];//Матрица перспективы
 per[0][0]=1;per[0][1]=0;per[0][2]=0;per[0][3]=0;
 per[1][0]=0;per[1][1]=1;per[1][2]=0;per[1][3]=0;
 per[2][0]=0;per[2][1]=0;per[2][2]=1;per[2][3]=-z_plane;
 per[3][0]=0;per[3][1]=0;per[3][2]=0;per[3][3]=1;
+//Выбор проекционного преобразования
 switch(proj_mode)
 {
 case 0:
@@ -324,15 +315,14 @@ proj[3][0]=0;proj[3][1]=0;proj[3][2]=0;proj[3][3]=1;
 
 for(k=0;k<6;k++)
 {
-int i, j;
 
 double v1[4]={o[k].get_x(),o[k].get_y(),o[k].get_z(),1};
 double v2[4]={0, 0, 0, 1};
 
-for (i = 0;i < 4;i++)
+for (int i = 0;i < 4;i++)
 {
         double sum = 0;
-        for (j = 0;j < 4;j++)
+        for (int j = 0;j < 4;j++)
         {
                 sum= sum+ (proj[j][i] * v1[j]);
         }
@@ -342,15 +332,15 @@ for (i = 0;i < 4;i++)
 if(proj_mode==2)
 {
 int i, j;
-
-for(i=0;i<2;i++)
+//Перспективное преобразование
+for(int i=0;i<2;i++)
 {
 per[i][i]=(z-z_plane)/(z-o[k].get_z());
 }
-for (i = 0;i < 4;i++)
+for (int i = 0;i < 4;i++)
 {
         double sum = 0;
-        for (j = 0;j < 4;j++)
+        for (int j = 0;j < 4;j++)
         {
                 sum= sum+ (per[j][i] * v2[j]);
         }
@@ -373,53 +363,65 @@ prismProj[k][1]= v2[1];
 prismProj[k][2]= v2[2];
 prismProj[k][3]= v2[3];
 
-
 }
 
  fillFaceList();
  countCoeffs();
- //Отрисовка контура
+ int facecenter[2]={0};
+
  for(int i=0;i<5;i++)
  {
  if(samePrism[i].toPrint)
  {
 
  if(!samePrism[i].trian)
- {
+ {//Отрисовка контура четырёхугольных граней
  bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d,samePrism[i].f[3][0]+d,samePrism[i].f[3][1]+d);
- Image1->Canvas->TextOutA(samePrism[0].f[0][0]+d,samePrism[0].f[0][1]+d,o[samePrism[0].index[0]].get_let());
-
+ //Заливка граней
+ facecenter[0]=(samePrism[i].f[0][0]+d+samePrism[i].f[1][0]+d+samePrism[i].f[2][0]+d+samePrism[i].f[3][0]+d)/4;
+ facecenter[1]=(samePrism[i].f[0][1]+d+samePrism[i].f[1][1]+d+samePrism[i].f[2][1]+d+samePrism[i].f[3][1]+d)/4;
+ surfaceFill(buff,samePrism[i].color,0,Image1->Width,facecenter[0],facecenter[1]);
  }
  else
- {
-
+ {//Отрисовка контура треугольных граней
  bresline(buff,Image1->Width,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[1][0]+d,samePrism[i].f[1][1]+d,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d);
  bresline(buff,Image1->Width,samePrism[i].f[2][0]+d,samePrism[i].f[2][1]+d,samePrism[i].f[0][0]+d,samePrism[i].f[0][1]+d);
-
+ //Заливка треугольных граней
+ facecenter[0]=(samePrism[i].f[0][0]+d+samePrism[i].f[1][0]+d+samePrism[i].f[2][0]+d)/3;
+ facecenter[1]=(samePrism[i].f[0][1]+d+samePrism[i].f[1][1]+d+samePrism[i].f[2][1]+d)/3;
+ surfaceFill(buff,samePrism[i].color,0,Image1->Width,facecenter[0],facecenter[1]);
  }
-
  samePrism[i].A=0.0;
  samePrism[i].B=0.0;
  samePrism[i].C=0.0;
  samePrism[i].D=0.0;
- //ЗАКРАСКА
  }
  }
+ //Вывод буфера на экран
  SetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Height,buff,&info,DIB_RGB_COLORS);
+ //Обозначение вершин буквами
  for(int i=0;i<5;i++)
  {
  if(samePrism[i].toPrint)
  {
- int off_x;
- int off_y;
+ int off_x;//Смещение буквы по x
+ int off_y;//Смещение буквы по y
  for(int j=0;j<3+!samePrism[i].trian;j++)
  {
- off_x=(o[samePrism[i].index[j]].get_x()<=bariocenter[0])?-10:8;
- off_y=(o[samePrism[i].index[j]].get_y()<=bariocenter[1])?-12:2;
+ //Вычисление смещений
+ off_x=(prismProj[samePrism[i].index[j]][0]<bariocenter[0])?-10:8;
+ off_y=(prismProj[samePrism[i].index[j]][1]<bariocenter[1])?-12:2;
+ /*
+ if(samePrism[i].index[j]>2)
+ {off_y=(prismProj[samePrism[i].index[j]][1]>prismProj[samePrism[i].index[j]-3][1])?12:-2;}
+ else
+ {off_y=(prismProj[samePrism[i].index[j]][1]<prismProj[samePrism[i].index[j]+3][1])?-12:2;}
+ */
+ //Вывод букв
  Image1->Canvas->TextOutA(samePrism[i].f[j][0]+d+off_x,samePrism[i].f[j][1]+d+off_y,o[samePrism[i].index[j]].get_let());
  }
  samePrism[i].trian=false;
@@ -428,6 +430,7 @@ prismProj[k][3]= v2[3];
  }
 
 }
+//---------------------------------------------------------------------------
 
 void rotandscale(MyPoint* o, bool sw, bool sign)
 {
@@ -472,7 +475,7 @@ r[3][0]=0; r[3][1]=0; r[3][2]=0; r[3][3]=1;
  }
  }
  int k=0;
-// Преобразование точки V
+// Преобразование точек
 for(k=0;k<6;k++)
 {
 double v1[4]={o[k].get_x(),o[k].get_y(),o[k].get_z(),1};
@@ -502,17 +505,12 @@ void prisminit(MyPoint* o)
  {
  o[i]=MyPoint(char('A'+i),o[i-3].get_x(),o[i-3].get_y(),o[i-3].get_z()+h);
  }
- /*
- prismProj=new double*[6];
- for(int i=0;i<6;i++)
- {
-    prismProj[i]=new double[3];
- }*/
 }
+//---------------------------------------------------------------------------
 
- void bresline(TColor* Image, int w, int x0, int y0, int x1, int y1)
+void bresline(TColor* Image, int w, int x0, int y0, int x1, int y1)
 {
-// ????????? ????? ?????????? ??????????
+// Отрисовка линии алгоритмом Брезенхэма
   int sx=x0<x1?1:-1;
   int dx=(x1-x0)*sx;
   int sy=y0<y1?1:-1;
@@ -539,40 +537,55 @@ void prisminit(MyPoint* o)
   }
   }
 }
+//---------------------------------------------------------------------------
+
 void fillFaceList(void)
-{  //МАССИВ ПРОЕКЦИИ
+{
+//Заполнение списка граней
 for(int k=0;k<2;k++)
 {
 for(int i=0;i<3;i++)
 {
-
+  //Внесение в список треугольных граней(оснований)
   samePrism[k].f[i]=prismProj[i+k*3];
   samePrism[k].index[i]=i+k*3;
   samePrism[k].trian=true;
 }
 }
-
+//Внесение в список треугольных граней(оснований)
+/*Нумерация вершин(с внешней строны грани ACDF): 1-левая нижняя,
+2-правая нижняя, 3-левая верхняя, 4-правая верхняя*/
 for(int k=2;k<5;k++)
 {
  for(int i=0;i<4;i++)
  {
   if(k==4)
-  {int skip=(i==3||i==0)*((i==0)?-1:1);
+  { //Грань ACFD-замыкающая
+  int skip=(i==3||i==0)*((i==0)?-1:1);
   samePrism[k].f[i]=prismProj[k-3+i+skip];
-  samePrism[k].index[i]=k-3+i+skip;}
+   samePrism[k].index[i]=k-3+i+skip;}
  else
- {bool skip=(i>=2)?1:0;
+ {//Грани BADE и CBEF
+ bool skip=(i>=2)?1:0;
  samePrism[k].f[i]=prismProj[k-2+i+skip];
  samePrism[k].index[i]=k-2+i+skip;}
  }
  }
+ //Инициализация цвета поверхности
+ samePrism[0].color=0x00FF00ff;//Фиолетовый
+ samePrism[1].color=0x00FF0000;//Красный
+ samePrism[2].color=0x0000FF00;//Зелёный
+ samePrism[3].color=0x000000FF;//Синий
+ samePrism[4].color=0x00FFFF00;//Жёлтый
 }
+//---------------------------------------------------------------------------
 
 void countCoeffs(void)
 {
+//Расчёт видимости поверхностей алгоритмом Робертса
 long int v1[3];
 long int v2[3];
-
+//Вычисление центра тяжести
 bariocenter[0]=0;
 bariocenter[1]=0;
 bariocenter[2]=0;
@@ -591,6 +604,7 @@ bariocenter[2]=0;
  bariocenter[2]=bariocenter[2]+prismProj[j][2];
  }
  bariocenter[2]=bariocenter[2]/6;
+ //Вычисление векторов нормали
 for(int i=0;i<5;i++)
 {
 
@@ -603,6 +617,7 @@ samePrism[i].A=v1[1]*v2[2]-v1[2]*v2[1];
 samePrism[i].B=v2[0]*v1[2]-v1[0]*v2[2];
 samePrism[i].C=v1[0]*v2[1]-v1[1]*v2[0];
 samePrism[i].D=(-1*samePrism[i].A*samePrism[i].f[0][0]-samePrism[i].B*samePrism[i].f[0][1]-samePrism[i].C*samePrism[i].f[0][2]);
+//Поворот векторов внутрь призмы
 if(samePrism[i].A*bariocenter[0]+samePrism[i].B*bariocenter[1]+samePrism[i].C*bariocenter[2]+samePrism[i].D>0)
 {
 samePrism[i].A*=-1;
@@ -610,27 +625,44 @@ samePrism[i].B*=-1;
 samePrism[i].C*=-1;
 samePrism[i].D*=-1;
 }
+//Определение видимости поверхности
 if(samePrism[i].C>0)
 {samePrism[i].toPrint=true;}
 
 }
 }
+//---------------------------------------------------------------------------
 
 void openBuffer(TImage* Image1)
-{
- info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER );
+{//Заполнение информационного заголовка о bitmap
+info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER );
 info.bmiHeader.biBitCount=0;
 info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,NULL,(BITMAPINFO*)&info,DIB_RGB_COLORS);
+//Открытие буфера и его заполнение
 buff=new TColor[info.bmiHeader.biHeight*info.bmiHeader.biWidth];
 info.bmiHeader.biCompression=BI_RGB;
 info.bmiHeader.biHeight*=-1;
 GetDIBits(Image1->Picture->Bitmap->Canvas->Handle,Image1->Picture->Bitmap->Handle,0,Image1->Picture->Bitmap->Height,buff,(BITMAPINFO*)&info,DIB_RGB_COLORS);
- //info.bmiHeader.biHeight*=-1;
-//bresline(buff,Image1->Width,100,100,400,100);
 }
+//---------------------------------------------------------------------------
+
 void closeBuffer(void)
 {
+//Очистка буфера
 delete buff;
+}
+//---------------------------------------------------------------------------
+
+void surfaceFill(TColor* Image, unsigned int fillColor, unsigned int brColor, int w, int x, int y)
+{
+ if((Image[x+y*w]!=brColor)&&(Image[x+y*w]!=fillColor))
+ {
+ Image[x+y*w]=fillColor;
+ surfaceFill(Image, fillColor, brColor, w, x+1, y);
+ surfaceFill(Image, fillColor, brColor, w, x, y+1);
+ surfaceFill(Image, fillColor, brColor, w, x-1, y);
+ surfaceFill(Image, fillColor, brColor, w, x, y-1);
+ }
 }
 
