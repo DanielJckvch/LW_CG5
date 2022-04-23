@@ -5,9 +5,7 @@
 
 #include "Unit1.h"
 #include "Unit2.h"
-//#include "Unit3.h"
 #include <math.h>
-//#include <Graphics.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -40,7 +38,7 @@ face* samePrism=new face[6];
 double prismProj[6][4];
 long int bariocenter[3];
 
-TColor* buff;
+TColor* buff=0;
 BITMAPINFO info;
 
 double h=50.0;
@@ -55,13 +53,6 @@ int mov_step=10;
 int axis_mode=0;
 int proj_mode=0;
 
-
-/*
-bool f1=1;
-bool f2=1;
-bool f3=1;
-bool f4=1;
- */
 //---------------------------------------------------------------------------
 __fastcall TForm1::TForm1(TComponent* Owner)
         : TForm(Owner)
@@ -269,6 +260,16 @@ Image1->Canvas->FillRect(rct);
 openBuffer(Image1);
 print(prism, Image1);
 closeBuffer();
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm1::Form1Close(TObject *Sender, TCloseAction &Action)
+{
+    if(buff)
+    {
+     delete buff;
+    }
+    delete prism;
+    delete samePrism;
 }
 //---------------------------------------------------------------------------
 
@@ -651,6 +652,7 @@ void closeBuffer(void)
 {
 //Очистка буфера
 delete buff;
+buff=0;
 }
 //---------------------------------------------------------------------------
 
@@ -665,4 +667,5 @@ void surfaceFill(TColor* Image, unsigned int fillColor, unsigned int brColor, in
  surfaceFill(Image, fillColor, brColor, w, x, y-1);
  }
 }
+
 
